@@ -21,6 +21,20 @@ interface Relationship {
   label?: string;
 }
 
+// Service function types and their metadata
+const serviceFunctionMap: Record<string, { icon: string; color: string; description: string }> = {
+  'auth': { icon: '🔐', color: '#8b5cf6', description: 'Authentication' },
+  'authentication': { icon: '🔐', color: '#8b5cf6', description: 'Authentication' },
+  'user': { icon: '👤', color: '#3b82f6', description: 'User Data' },
+  'payment': { icon: '💳', color: '#10b981', description: 'Payment Processing' },
+  'payments': { icon: '💳', color: '#10b981', description: 'Payment Processing' },
+  'order': { icon: '📦', color: '#f59e0b', description: 'Order Management' },
+  'notification': { icon: '🔔', color: '#ec4899', description: 'Notifications' },
+  'search': { icon: '🔍', color: '#06b6d4', description: 'Search' },
+  'cache': { icon: '⚡', color: '#f97316', description: 'Cache' },
+  'gateway': { icon: '🚪', color: '#6366f1', description: 'API Gateway' },
+};
+
 // Parse architecture entities and relationships
 function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relationships: Relationship[] } {
   const text = summary.summary + ' ' + summary.keyDecisions.join(' ') + ' ' +
@@ -29,29 +43,65 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
   const entities: Entity[] = [];
   const relationships: Relationship[] = [];
 
-  // 1. Identify services (Service A, B, C... or service a, b, c)
-  const servicePattern = /(?:service|microservice|component)[\s:]+([A-Za-z][a-zA-Z0-9]*)/gi;
-  const foundServices = new Set<string>();
+  // 1. Identify services with their functions
+  // Match "Service A handles authentication" or "Service B manages user data"
+  const serviceWithFunctionPattern = /(?:service|microservice)[\s:]+([A-Za-z][a-zA-Z0-9]*)\s+(?:handles?|manages?|processes?)\s+([a-z\s]+)/gi;
+  const foundServices = new Map<string, { name: string; function?: string }>();
   let match;
-  while ((match = servicePattern.exec(text)) !== null) {
+  
+  while ((match = serviceWithFunctionPattern.exec(text)) !== null) {
     const name = match[1].toUpperCase();
+    const func = match[2].trim().toLowerCase();
     if (!foundServices.has(name)) {
-      foundServices.add(name);
-      entities.push({
-        id: `service-${name.toLowerCase()}`,
-        name: `Service ${name}`,
-        type: 'service',
-        layer: 'application',
-        description: ''
-      });
+      foundServices.set(name, { name, function: func });
     }
   }
 
-  // 2. Identify frontend
+  // Also check for simple service mentions
+  const servicePattern = /(?:service|microservice)[\s:]+([A-Za-z][a-zA-Z0-9]*)/gi;
+  while ((match = servicePattern.exec(text)) !== null) {
+    const name = match[1].toUpperCase();
+    if (!foundServices.has(name)) {
+      foundServices.set(name, { name });
+    }
+  }
+
+  // Create service entities with proper descriptions
+  foundServices.forEach(({ name, function: func }) => {
+    const serviceId = `service-${name.toLowerCase()}`;
+    let description = '';
+    
+    if (func) {
+      // Match function to known types
+      for (const [key, value] of Object.entries(serviceFunctionMap)) {
+        if (func.includes(key)) {
+          description = value.description;
+          break;
+        }
+      }
+      if (!description) {
+        description = func.charAt(0).toUpperCase() + func.slice(1);
+      }
+    }
+
+    entities.push({
+      id: serviceId,
+      name: `Service ${name}`,
+      type: 'service',
+      layer: 'application',
+      description
+    });
+  });
+
+  // 2. Identify frontend with technology
+  const frontendTechPattern = /(react|vue|angular|svelte)[\s\w]*(?:app|application|frontend)/i;
+  const frontendMatch = text.match(frontendTechPattern);
+  const frontendTech = frontendMatch ? frontendMatch[1] : '';
+  
   if (/front\s*end|frontend|web|mobile|app|user\s*interface/i.test(text)) {
     entities.push({
       id: 'frontend',
-      name: 'Frontend',
+      name: frontendTech ? `${frontendTech.charAt(0).toUpperCase() + frontendTech.slice(1)} App` : 'Frontend',
       type: 'client',
       layer: 'presentation',
       description: 'User Interface'
@@ -86,10 +136,12 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
     });
   }
 
-  // 5. Extract relationships
+  // 5. Extract specific relationships from text
+  // Pattern: "Service B depends on Service C"
   const depPatterns = [
     { pattern: /([A-Za-z][a-zA-Z0-9]*)\s+(?:depends?\s+on|relies?\s+on)\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'dependency' as const },
     { pattern: /([A-Za-z][a-zA-Z0-9]*)\s+(?:calls?|invokes?|uses?)\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'sync' as const },
+    { pattern: /([A-Za-z][a-zA-Z0-9]*)\s+(?:communicates?\s+with|connects?\s+to)\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'sync' as const },
     { pattern: /([A-Za-z][a-zA-Z0-9]*)\s+(?:sends?|publishes?)\s+(?:to|for)\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'async' as const },
     { pattern: /between\s+([A-Za-z][a-zA-Z0-9]*)\s+and\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'dependency' as const },
   ];
@@ -99,43 +151,34 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       const fromName = match[1].toUpperCase();
       const toName = match[2].toUpperCase();
 
-      // Find corresponding service IDs
       const fromEntity = entities.find(e => e.name.includes(fromName));
       const toEntity = entities.find(e => e.name.includes(toName));
 
-      if (fromEntity && toEntity) {
-        relationships.push({
-          from: fromEntity.id,
-          to: toEntity.id,
-          type
-        });
+      if (fromEntity && toEntity && fromEntity.id !== toEntity.id) {
+        // Avoid duplicate relationships
+        const exists = relationships.find(r => r.from === fromEntity.id && r.to === toEntity.id);
+        if (!exists) {
+          relationships.push({ from: fromEntity.id, to: toEntity.id, type });
+        }
       }
     }
   });
 
-  // 6. Auto-create relationships
-  // Frontend -> all services
+  // 6. Auto-create relationships based on service types
   const frontend = entities.find(e => e.id === 'frontend');
-  if (frontend && services.length > 0) {
-    services.forEach(service => {
-      if (!relationships.find(r => r.from === frontend.id && r.to === service.id)) {
-        relationships.push({
-          from: frontend.id,
-          to: service.id,
-          type: 'sync'
-        });
-      }
-    });
-  }
-
-  // Create chain relationships between services if none exist
-  if (relationships.length === 0 && services.length >= 2) {
-    for (let i = 0; i < services.length - 1; i++) {
-      relationships.push({
-        from: services[i].id,
-        to: services[i + 1].id,
-        type: 'dependency'
-      });
+  const authService = services.find(s => s.description?.toLowerCase().includes('auth'));
+  
+  // Frontend should connect to Auth service if exists
+  if (frontend && authService) {
+    const exists = relationships.find(r => r.from === frontend.id && r.to === authService.id);
+    if (!exists) {
+      relationships.push({ from: frontend.id, to: authService.id, type: 'sync' });
+    }
+  } else if (frontend && services.length > 0) {
+    // Otherwise frontend connects to first service
+    const exists = relationships.find(r => r.from === frontend.id && r.to === services[0].id);
+    if (!exists) {
+      relationships.push({ from: frontend.id, to: services[0].id, type: 'sync' });
     }
   }
 
@@ -143,12 +186,9 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
   const database = entities.find(e => e.type === 'database');
   if (database) {
     services.forEach(service => {
-      if (!relationships.find(r => r.from === service.id && r.to === database!.id)) {
-        relationships.push({
-          from: service.id,
-          to: database.id,
-          type: 'sync'
-        });
+      const exists = relationships.find(r => r.from === service.id && r.to === database!.id);
+      if (!exists) {
+        relationships.push({ from: service.id, to: database.id, type: 'sync' });
       }
     });
   }
@@ -158,7 +198,7 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
 
 // Architecture node component
 function ArchitectureNode({ entity }: { entity: Entity }) {
-  const colors = {
+  const baseColors = {
     client: { bg: '#f59e0b', border: '#d97706', icon: '🖥️' },
     api: { bg: '#8b5cf6', border: '#7c3aed', icon: '🔌' },
     service: { bg: '#3b82f6', border: '#2563eb', icon: '⚙️' },
@@ -168,7 +208,37 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
     cache: { bg: '#06b6d4', border: '#0891b2', icon: '⚡' },
   };
 
-  const color = colors[entity.type];
+  // Get service-specific icon and color based on description
+  let color = baseColors[entity.type];
+  let icon = color.icon;
+  
+  if (entity.type === 'service' && entity.description) {
+    const desc = entity.description.toLowerCase();
+    if (desc.includes('auth')) {
+      icon = '🔐';
+      color = { bg: '#8b5cf6', border: '#7c3aed', icon: '🔐' };
+    } else if (desc.includes('user')) {
+      icon = '👤';
+      color = { bg: '#3b82f6', border: '#2563eb', icon: '👤' };
+    } else if (desc.includes('payment')) {
+      icon = '💳';
+      color = { bg: '#10b981', border: '#059669', icon: '💳' };
+    } else if (desc.includes('order')) {
+      icon = '📦';
+      color = { bg: '#f59e0b', border: '#d97706', icon: '📦' };
+    } else if (desc.includes('notification')) {
+      icon = '🔔';
+      color = { bg: '#ec4899', border: '#db2777', icon: '🔔' };
+    } else if (desc.includes('search')) {
+      icon = '🔍';
+      color = { bg: '#06b6d4', border: '#0891b2', icon: '🔍' };
+    }
+  }
+  
+  // Check if frontend is React
+  if (entity.type === 'client' && entity.name.toLowerCase().includes('react')) {
+    icon = '⚛️';
+  }
 
   // Database - cylinder shape
   if (entity.type === 'database') {
@@ -182,7 +252,7 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
           className="w-40 h-32 -mt-6 flex flex-col items-center justify-center border-x-2"
           style={{ backgroundColor: color.bg, borderColor: color.border }}
         >
-          <span className="text-5xl">{color.icon}</span>
+          <span className="text-5xl">{icon}</span>
           <span className="text-white text-lg font-bold mt-3">{entity.name}</span>
         </div>
         <div
@@ -204,7 +274,7 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
           boxShadow: `0 8px 30px ${color.bg}50`
         }}
       >
-        <span className="text-6xl">{color.icon}</span>
+        <span className="text-6xl">{icon}</span>
         <span className="text-white text-xl font-bold mt-4">{entity.name}</span>
         {entity.description && (
           <span className="text-white/80 text-sm mt-2">{entity.description}</span>
@@ -223,7 +293,7 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
         boxShadow: `0 6px 24px ${color.bg}40`
       }}
     >
-      <span className="text-5xl">{color.icon}</span>
+      <span className="text-5xl">{icon}</span>
       <span className="text-white text-xl font-bold mt-3 text-center px-4">{entity.name}</span>
       {entity.description && (
         <span className="text-white/70 text-sm mt-2">{entity.description}</span>
