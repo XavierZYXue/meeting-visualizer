@@ -196,6 +196,26 @@ meeting-visualizer/
 - Service B ↔ Service C (dependency)
 - All services connected to shared database
 
+### Decision-Making Flowchart
+**Input**: "We need to decide on the database technology. Option A is PostgreSQL for relational data, Option B is MongoDB for flexibility. We also need to choose between cloud providers: AWS has better services, Azure has better enterprise support. The team decided to go with PostgreSQL on AWS."
+
+**Output**: Interactive flowchart with:
+- Decision diamonds for database and cloud choices
+- Process boxes for evaluation criteria
+- Branch paths showing Yes/No decisions
+- End node with final decision
+
+**Visual Elements**:
+```
+[Start]
+   ↓
+[Choose Database] ──→ [PostgreSQL] ──→ [Choose Cloud]
+   ↓                       ↓              ↓
+[MongoDB]              [AWS] ←────── [Azure]
+   ↓                       ↓
+  [X]                 [Final Decision]
+```
+
 ### Project Planning Meeting
 **Input**: "Phase 1 is planning for one week, Phase 2 is development for three weeks, and Phase 3 is testing for one week. John leads planning, Sarah handles development, and Mike manages testing."
 
