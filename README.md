@@ -197,7 +197,7 @@ meeting-visualizer/
 - All services connected to shared database
 
 ### Decision-Making Flowchart
-**Input**: "We need to decide on the database technology. Option A is PostgreSQL for relational data, Option B is MongoDB for flexibility. We also need to choose between cloud providers: AWS has better services, Azure has better enterprise support. The team decided to go with PostgreSQL on AWS."
+**Input**: "We need to decide on the database technology. Option A is PostgreSQL for relational data, Option B is MongoDB for flexibility. We also need to choose between cloud providers: GCP has better services, Azure has better enterprise support. The team decided to go with PostgreSQL on GCP."
 
 **Output**: Interactive flowchart with:
 - Decision diamonds for database and cloud choices

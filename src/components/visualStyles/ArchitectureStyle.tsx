@@ -107,8 +107,7 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
         relationships.push({
           from: fromEntity.id,
           to: toEntity.id,
-          type,
-          label: type === 'dependency' ? 'depends' : type
+          type
         });
       }
     }
@@ -123,8 +122,7 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
         relationships.push({
           from: frontend.id,
           to: service.id,
-          type: 'sync',
-          label: 'HTTP/REST'
+          type: 'sync'
         });
       }
     });
@@ -136,8 +134,7 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       relationships.push({
         from: services[i].id,
         to: services[i + 1].id,
-        type: 'dependency',
-        label: 'depends'
+        type: 'dependency'
       });
     }
   }
@@ -150,8 +147,7 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
         relationships.push({
           from: service.id,
           to: database.id,
-          type: 'sync',
-          label: 'SQL/TCP'
+          type: 'sync'
         });
       }
     });
@@ -177,20 +173,20 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
   // Database - cylinder shape
   if (entity.type === 'database') {
     return (
-      <div className="flex flex-col items-center mx-6">
+      <div className="flex flex-col items-center">
         <div
-          className="w-32 h-10 rounded-full border-2"
+          className="w-40 h-12 rounded-full border-2"
           style={{ backgroundColor: color.bg, borderColor: color.border }}
         />
         <div
-          className="w-32 h-24 -mt-5 flex flex-col items-center justify-center border-x-2"
+          className="w-40 h-32 -mt-6 flex flex-col items-center justify-center border-x-2"
           style={{ backgroundColor: color.bg, borderColor: color.border }}
         >
-          <span className="text-4xl">{color.icon}</span>
-          <span className="text-white text-base font-bold mt-2">{entity.name}</span>
+          <span className="text-5xl">{color.icon}</span>
+          <span className="text-white text-lg font-bold mt-3">{entity.name}</span>
         </div>
         <div
-          className="w-32 h-10 -mt-5 rounded-full border-2 bg-white"
+          className="w-40 h-12 -mt-6 rounded-full border-2 bg-white"
           style={{ borderColor: color.border }}
         />
       </div>
@@ -201,15 +197,15 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
   if (entity.type === 'client') {
     return (
       <div
-        className="w-40 h-32 rounded-3xl flex flex-col items-center justify-center border-3 mx-6"
+        className="w-52 h-40 rounded-3xl flex flex-col items-center justify-center border-3"
         style={{
           backgroundColor: color.bg,
           borderColor: color.border,
           boxShadow: `0 8px 30px ${color.bg}50`
         }}
       >
-        <span className="text-5xl">{color.icon}</span>
-        <span className="text-white text-lg font-bold mt-3">{entity.name}</span>
+        <span className="text-6xl">{color.icon}</span>
+        <span className="text-white text-xl font-bold mt-4">{entity.name}</span>
         {entity.description && (
           <span className="text-white/80 text-sm mt-2">{entity.description}</span>
         )}
@@ -220,15 +216,15 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
   // Standard service node
   return (
     <div
-      className="w-44 h-32 rounded-2xl flex flex-col items-center justify-center border-2 mx-6"
+      className="w-56 h-40 rounded-2xl flex flex-col items-center justify-center border-2"
       style={{
         backgroundColor: color.bg,
         borderColor: color.border,
         boxShadow: `0 6px 24px ${color.bg}40`
       }}
     >
-      <span className="text-4xl">{color.icon}</span>
-      <span className="text-white text-lg font-bold mt-2 text-center px-3">{entity.name}</span>
+      <span className="text-5xl">{color.icon}</span>
+      <span className="text-white text-xl font-bold mt-3 text-center px-4">{entity.name}</span>
       {entity.description && (
         <span className="text-white/70 text-sm mt-2">{entity.description}</span>
       )}
@@ -243,47 +239,36 @@ function ConnectionLine({ rel }: { rel: Relationship }) {
   const color = isAsync ? '#ec4899' : isDependency ? '#f59e0b' : '#3b82f6';
 
   return (
-    <div className="flex flex-col items-center mx-4">
-      <div className="relative flex items-center">
-        {/* Line */}
-        <div
-          className="h-1.5 w-32"
-          style={{
-            backgroundColor: color,
-            borderStyle: isAsync ? 'dashed' : 'solid',
-          }}
-        />
+    <div className="flex items-center" style={{ width: '60px' }}>
+      {/* Line */}
+      <div
+        className="h-2"
+        style={{
+          backgroundColor: color,
+          borderStyle: isAsync ? 'dashed' : 'solid',
+          width: '50px'
+        }}
+      />
 
-        {/* Arrow */}
-        <div
-          className="w-0 h-0 -ml-1"
-          style={{
-            borderTop: '10px solid transparent',
-            borderBottom: '10px solid transparent',
-            borderLeft: `12px solid ${color}`
-          }}
-        />
-      </div>
-
-      {/* Label */}
-      {rel.label && (
-        <div
-          className="mt-3 px-4 py-1.5 rounded-full text-sm font-bold bg-white border-2"
-          style={{ borderColor: color, color }}
-        >
-          {rel.label}
-        </div>
-      )}
+      {/* Arrow */}
+      <div
+        className="w-0 h-0"
+        style={{
+          borderTop: '8px solid transparent',
+          borderBottom: '8px solid transparent',
+          borderLeft: `10px solid ${color}`
+        }}
+      />
     </div>
   );
 }
 
 // Vertical connector line
-function VerticalConnector({ label, color = '#9ca3af' }: { label?: string; color?: string }) {
+function VerticalConnector({ color = '#9ca3af' }: { label?: string; color?: string }) {
   return (
-    <div className="flex flex-col items-center my-8">
+    <div className="flex flex-col items-center my-16">
       <div
-        className="w-1 h-24 relative"
+        className="w-1.5 h-48 relative"
         style={{ backgroundColor: color }}
       >
         <div
@@ -291,20 +276,12 @@ function VerticalConnector({ label, color = '#9ca3af' }: { label?: string; color
           style={{
             width: 0,
             height: 0,
-            borderLeft: '8px solid transparent',
-            borderRight: '8px solid transparent',
-            borderTop: `10px solid ${color}`
+            borderLeft: '10px solid transparent',
+            borderRight: '10px solid transparent',
+            borderTop: `12px solid ${color}`
           }}
         />
       </div>
-      {label && (
-        <span
-          className="mt-2 px-3 py-1 rounded-full text-xs font-medium bg-white border"
-          style={{ borderColor: color, color }}
-        >
-          {label}
-        </span>
-      )}
     </div>
   );
 }
@@ -322,9 +299,9 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
   return (
     <div className="p-8 bg-gray-50 min-h-full">
       {/* Title */}
-      <div className="text-center mb-10">
+      <div className="text-center mb-16">
         <h1 className="text-3xl font-bold text-gray-900">{summary.title}</h1>
-        <p className="text-gray-500 mt-2">System Architecture Diagram</p>
+        <p className="text-gray-500 mt-4">System Architecture Diagram</p>
       </div>
 
       {/* Architecture Diagram - Layered Layout */}
@@ -332,13 +309,13 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
         
         {/* Presentation Layer */}
         {byLayer.presentation.length > 0 && (
-          <div className="mb-12 py-8">
-            <div className="text-center mb-8">
+          <div className="mb-16 py-12">
+            <div className="text-center mb-12">
               <span className="px-6 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-semibold">
                 Presentation Layer
               </span>
             </div>
-            <div className="flex justify-center items-center flex-wrap gap-8">
+            <div className="flex justify-center items-center flex-wrap gap-16">
               {byLayer.presentation.map((entity) => (
                 <ArchitectureNode key={entity.id} entity={entity} />
               ))}
@@ -348,27 +325,27 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
         
         {/* Connect to Application Layer */}
         {byLayer.presentation.length > 0 && byLayer.application.length > 0 && (
-          <VerticalConnector label="HTTP/REST" color="#f59e0b" />
+          <VerticalConnector color="#f59e0b" />
         )}
         
         {/* Application Layer */}
         {byLayer.application.length > 0 && (
-          <div className="mb-12 py-8">
-            <div className="text-center mb-8">
+          <div className="mb-16 py-12">
+            <div className="text-center mb-12">
               <span className="px-6 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
                 Application Layer
               </span>
             </div>
-            <div className="flex justify-center items-center flex-wrap gap-8">
+            <div className="flex justify-center items-center flex-wrap">
               {byLayer.application.map((entity, idx) => (
                 <div key={entity.id} className="flex items-center">
                   <ArchitectureNode entity={entity} />
                   {idx < byLayer.application.length - 1 && (
-                    <div className="mx-6">
+                    <div style={{ marginLeft: '40px', marginRight: '40px' }}>
                       <ConnectionLine 
                         rel={relationships.find(r => 
                           r.from === entity.id && byLayer.application.some(e => e.id === r.to)
-                        ) || { from: entity.id, to: byLayer.application[idx + 1].id, type: 'dependency', label: 'depends' }} 
+                        ) || { from: entity.id, to: byLayer.application[idx + 1].id, type: 'dependency' }} 
                       />
                     </div>
                   )}
@@ -380,18 +357,18 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
         
         {/* Connect to Infrastructure Layer */}
         {byLayer.application.length > 0 && byLayer.infrastructure.length > 0 && (
-          <VerticalConnector label="SQL/TCP" color="#3b82f6" />
+          <VerticalConnector color="#3b82f6" />
         )}
         
         {/* Infrastructure Layer */}
         {byLayer.infrastructure.length > 0 && (
-          <div className="mb-12 py-8">
-            <div className="text-center mb-8">
+          <div className="mb-16 py-12">
+            <div className="text-center mb-12">
               <span className="px-6 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
                 Infrastructure Layer
               </span>
             </div>
-            <div className="flex justify-center items-center flex-wrap gap-8">
+            <div className="flex justify-center items-center flex-wrap gap-16">
               {byLayer.infrastructure.map((entity) => (
                 <ArchitectureNode key={entity.id} entity={entity} />
               ))}
