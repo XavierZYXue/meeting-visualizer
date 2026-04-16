@@ -5,7 +5,7 @@ interface ArchitectureStyleProps {
   summary: MeetingSummary;
 }
 
-// 实体类型
+// Entity Type
 interface Entity {
   id: string;
   name: string;
@@ -21,15 +21,15 @@ interface Relationship {
   label?: string;
 }
 
-// 解析架构实体和关系
+// Parse architecture entities and relationships
 function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relationships: Relationship[] } {
-  const text = summary.summary + ' ' + summary.keyDecisions.join(' ') + ' ' + 
+  const text = summary.summary + ' ' + summary.keyDecisions.join(' ') + ' ' +
                summary.actionItems.map(a => a.task).join(' ');
-  
+
   const entities: Entity[] = [];
   const relationships: Relationship[] = [];
-  
-  // 1. 识别服务（Service A, B, C... 或 service a, b, c）
+
+  // 1. Identify services (Service A, B, C... or service a, b, c)
   const servicePattern = /(?:service|microservice|component)[\s:]+([A-Za-z][a-zA-Z0-9]*)/gi;
   const foundServices = new Set<string>();
   let match;
@@ -46,8 +46,8 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       });
     }
   }
-  
-  // 2. 识别前端
+
+  // 2. Identify frontend
   if (/front\s*end|frontend|web|mobile|app|user\s*interface/i.test(text)) {
     entities.push({
       id: 'frontend',
@@ -57,8 +57,8 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       description: 'User Interface'
     });
   }
-  
-  // 3. 识别数据库
+
+  // 3. Identify database
   const dbPattern = /(?:database|db|storage|postgres|mysql|mongo|redis)[\s:]+([A-Za-z][a-zA-Z0-9]*)?/gi;
   while ((match = dbPattern.exec(text)) !== null) {
     const name = match[1] || 'Primary';
@@ -73,8 +73,8 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       });
     }
   }
-  
-  // 4. 如果没有数据库但有服务，自动添加数据库
+
+  // 4. Auto-add database if services exist but no database
   const services = entities.filter(e => e.type === 'service');
   if (services.length > 0 && !entities.find(e => e.type === 'database')) {
     entities.push({
@@ -85,37 +85,37 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       description: 'Data Storage'
     });
   }
-  
-  // 5. 提取关系
+
+  // 5. Extract relationships
   const depPatterns = [
     { pattern: /([A-Za-z][a-zA-Z0-9]*)\s+(?:depends?\s+on|relies?\s+on)\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'dependency' as const },
     { pattern: /([A-Za-z][a-zA-Z0-9]*)\s+(?:calls?|invokes?|uses?)\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'sync' as const },
     { pattern: /([A-Za-z][a-zA-Z0-9]*)\s+(?:sends?|publishes?)\s+(?:to|for)\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'async' as const },
     { pattern: /between\s+([A-Za-z][a-zA-Z0-9]*)\s+and\s+([A-Za-z][a-zA-Z0-9]*)/gi, type: 'dependency' as const },
   ];
-  
+
   depPatterns.forEach(({ pattern, type }) => {
     while ((match = pattern.exec(text)) !== null) {
       const fromName = match[1].toUpperCase();
       const toName = match[2].toUpperCase();
-      
-      // 查找对应的服务ID
+
+      // Find corresponding service IDs
       const fromEntity = entities.find(e => e.name.includes(fromName));
       const toEntity = entities.find(e => e.name.includes(toName));
-      
+
       if (fromEntity && toEntity) {
-        relationships.push({ 
-          from: fromEntity.id, 
-          to: toEntity.id, 
-          type, 
-          label: type === 'dependency' ? 'depends' : type 
+        relationships.push({
+          from: fromEntity.id,
+          to: toEntity.id,
+          type,
+          label: type === 'dependency' ? 'depends' : type
         });
       }
     }
   });
-  
-  // 6. 自动创建关系
-  // Frontend -> 所有服务
+
+  // 6. Auto-create relationships
+  // Frontend -> all services
   const frontend = entities.find(e => e.id === 'frontend');
   if (frontend && services.length > 0) {
     services.forEach(service => {
@@ -129,8 +129,8 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       }
     });
   }
-  
-  // 服务之间如果没有关系，创建链式关系
+
+  // Create chain relationships between services if none exist
   if (relationships.length === 0 && services.length >= 2) {
     for (let i = 0; i < services.length - 1; i++) {
       relationships.push({
@@ -141,8 +141,8 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       });
     }
   }
-  
-  // 所有服务 -> 数据库
+
+  // All services -> database
   const database = entities.find(e => e.type === 'database');
   if (database) {
     services.forEach(service => {
@@ -156,11 +156,11 @@ function parseArchitecture(summary: MeetingSummary): { entities: Entity[]; relat
       }
     });
   }
-  
+
   return { entities, relationships };
 }
 
-// 架构节点组件
+// Architecture node component
 function ArchitectureNode({ entity }: { entity: Entity }) {
   const colors = {
     client: { bg: '#f59e0b', border: '#d97706', icon: '🖥️' },
@@ -174,7 +174,7 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
 
   const color = colors[entity.type];
 
-  // 数据库 - 圆柱形
+  // Database - cylinder shape
   if (entity.type === 'database') {
     return (
       <div className="flex flex-col items-center mx-6">
@@ -197,7 +197,7 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
     );
   }
 
-  // 客户端 - 大圆角
+  // Client - large rounded corners
   if (entity.type === 'client') {
     return (
       <div
@@ -217,7 +217,7 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
     );
   }
 
-  // 标准服务节点
+  // Standard service node
   return (
     <div
       className="w-44 h-32 rounded-2xl flex flex-col items-center justify-center border-2 mx-6"
@@ -236,7 +236,7 @@ function ArchitectureNode({ entity }: { entity: Entity }) {
   );
 }
 
-// 连接线组件
+// Connection line component
 function ConnectionLine({ rel }: { rel: Relationship }) {
   const isAsync = rel.type === 'async';
   const isDependency = rel.type === 'dependency';
@@ -245,7 +245,7 @@ function ConnectionLine({ rel }: { rel: Relationship }) {
   return (
     <div className="flex flex-col items-center mx-4">
       <div className="relative flex items-center">
-        {/* 线条 */}
+        {/* Line */}
         <div
           className="h-1.5 w-32"
           style={{
@@ -254,7 +254,7 @@ function ConnectionLine({ rel }: { rel: Relationship }) {
           }}
         />
 
-        {/* 箭头 */}
+        {/* Arrow */}
         <div
           className="w-0 h-0 -ml-1"
           style={{
@@ -265,7 +265,7 @@ function ConnectionLine({ rel }: { rel: Relationship }) {
         />
       </div>
 
-      {/* 标签 */}
+      {/* Label */}
       {rel.label && (
         <div
           className="mt-3 px-4 py-1.5 rounded-full text-sm font-bold bg-white border-2"
@@ -278,15 +278,15 @@ function ConnectionLine({ rel }: { rel: Relationship }) {
   );
 }
 
-// 垂直连接线
+// Vertical connector line
 function VerticalConnector({ label, color = '#9ca3af' }: { label?: string; color?: string }) {
   return (
     <div className="flex flex-col items-center my-8">
-      <div 
+      <div
         className="w-1 h-24 relative"
         style={{ backgroundColor: color }}
       >
-        <div 
+        <div
           className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
           style={{
             width: 0,
@@ -298,7 +298,7 @@ function VerticalConnector({ label, color = '#9ca3af' }: { label?: string; color
         />
       </div>
       {label && (
-        <span 
+        <span
           className="mt-2 px-3 py-1 rounded-full text-xs font-medium bg-white border"
           style={{ borderColor: color, color }}
         >
@@ -312,7 +312,7 @@ function VerticalConnector({ label, color = '#9ca3af' }: { label?: string; color
 export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
   const { entities, relationships } = useMemo(() => parseArchitecture(summary), [summary]);
   
-  // 按层分组
+  // Group by layer
   const byLayer = {
     presentation: entities.filter(e => e.layer === 'presentation'),
     application: entities.filter(e => e.layer === 'application'),
@@ -321,13 +321,13 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
   
   return (
     <div className="p-8 bg-gray-50 min-h-full">
-      {/* 标题 */}
+      {/* Title */}
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-gray-900">{summary.title}</h1>
         <p className="text-gray-500 mt-2">System Architecture Diagram</p>
       </div>
 
-      {/* 架构图 - 分层布局 */}
+      {/* Architecture Diagram - Layered Layout */}
       <div className="max-w-6xl mx-auto">
         
         {/* Presentation Layer */}
@@ -346,7 +346,7 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
           </div>
         )}
         
-        {/* 连接到应用层 */}
+        {/* Connect to Application Layer */}
         {byLayer.presentation.length > 0 && byLayer.application.length > 0 && (
           <VerticalConnector label="HTTP/REST" color="#f59e0b" />
         )}
@@ -378,7 +378,7 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
           </div>
         )}
         
-        {/* 连接到基础设施层 */}
+        {/* Connect to Infrastructure Layer */}
         {byLayer.application.length > 0 && byLayer.infrastructure.length > 0 && (
           <VerticalConnector label="SQL/TCP" color="#3b82f6" />
         )}
@@ -401,7 +401,7 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
         
       </div>
 
-      {/* 依赖关系列表 */}
+      {/* Service Dependencies List */}
       {relationships.length > 0 && (
         <div className="mt-12 max-w-3xl mx-auto">
           <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
@@ -432,7 +432,7 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
         </div>
       )}
 
-      {/* 图例 */}
+      {/* Legend */}
       <div className="mt-10 max-w-4xl mx-auto">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h4 className="text-sm font-bold text-gray-700 mb-4">Architecture Legend</h4>
@@ -452,8 +452,8 @@ export function ArchitectureStyle({ summary }: ArchitectureStyleProps) {
               </div>
             ))}
           </div>
-          
-          {/* 连接线图例 */}
+
+          {/* Connection Line Legend */}
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-center gap-8">
             <div className="flex items-center gap-2">
               <div className="w-8 h-1 bg-blue-500" />

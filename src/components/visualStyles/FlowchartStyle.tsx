@@ -17,7 +17,7 @@ interface FlowchartStyleProps {
   summary: MeetingSummary;
 }
 
-// 节点数据类型
+// Node data type
 interface FlowNodeData extends Record<string, unknown> {
   label: string;
   description?: string;
@@ -25,12 +25,12 @@ interface FlowNodeData extends Record<string, unknown> {
   priority?: 'high' | 'medium' | 'low';
 }
 
-// 解析内容生成流程图节点和边
+// Parse content to generate flowchart nodes and edges
 function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[]; edges: Edge[] } {
   const nodes: Node<FlowNodeData>[] = [];
   const edges: Edge[] = [];
-  
-  // 1. 开始节点
+
+  // 1. Start node
   nodes.push({
     id: 'start',
     type: 'input',
@@ -46,16 +46,16 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
       width: 120,
     },
   });
-  
+
   let currentY = 80;
   let nodeId = 1;
-  
-  // 2. 会议主题
+
+  // 2. Meeting topic
   nodes.push({
     id: `node-${nodeId}`,
     type: 'default',
     position: { x: 400, y: currentY },
-    data: { 
+    data: {
       label: summary.title.slice(0, 30),
       description: 'Meeting Topic'
     },
@@ -70,7 +70,7 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
       textAlign: 'center',
     },
   });
-  
+
   edges.push({
     id: `e-start-${nodeId}`,
     source: 'start',
@@ -79,16 +79,16 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
     markerEnd: { type: MarkerType.ArrowClosed },
     style: { stroke: '#6b7280', strokeWidth: 2 },
   });
-  
+
   currentY += 100;
   nodeId++;
-  
-  // 3. 执行摘要
+
+  // 3. Executive summary
   nodes.push({
     id: `node-${nodeId}`,
     type: 'default',
     position: { x: 400, y: currentY },
-    data: { 
+    data: {
       label: 'Executive Summary',
       description: summary.summary.slice(0, 100) + '...'
     },
@@ -102,7 +102,7 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
       textAlign: 'center',
     },
   });
-  
+
   edges.push({
     id: `e-${nodeId-1}-${nodeId}`,
     source: `node-${nodeId-1}`,
@@ -112,11 +112,11 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
     style: { stroke: '#6b7280', strokeWidth: 2 },
     label: 'discuss',
   });
-  
+
   currentY += 120;
   nodeId++;
-  
-  // 4. 关键决策 - 使用菱形决策节点
+
+  // 4. Key decisions - diamond decision nodes
   const decisions = summary.keyDecisions || [];
   decisions.forEach((decision, index) => {
     const decisionId = `decision-${index}`;
@@ -157,16 +157,16 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
     currentY += 150;
   });
   
-  // 5. 行动项 - 并行分支
+  // 5. Action items - parallel branches
   const actions = summary.actionItems || [];
   if (actions.length > 0) {
     const actionStartId = `node-${nodeId}`;
-    
+
     nodes.push({
       id: actionStartId,
       type: 'default',
       position: { x: 400, y: currentY },
-      data: { 
+      data: {
         label: `Action Items (${actions.length})`,
         icon: '⚡'
       },
@@ -180,7 +180,7 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
         width: 180,
       },
     });
-    
+
     edges.push({
       id: `e-to-actions`,
       source: decisions.length > 0 ? `decision-${decisions.length-1}` : `node-${nodeId-1}`,
@@ -189,24 +189,24 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
       markerEnd: { type: MarkerType.ArrowClosed },
       style: { stroke: '#6b7280', strokeWidth: 2 },
     });
-    
+
     currentY += 100;
     nodeId++;
-    
-    // 行动项详情节点 - 水平排列
+
+    // Action item detail nodes - horizontal layout
     const actionSpacing = 220;
     const startX = 400 - ((actions.length - 1) * actionSpacing) / 2;
-    
+
     actions.forEach((action, index) => {
       const actionId = `action-${index}`;
-      const priorityColor = action.priority === 'high' ? '#ef4444' : 
+      const priorityColor = action.priority === 'high' ? '#ef4444' :
                            action.priority === 'medium' ? '#f59e0b' : '#10b981';
-      
+
       nodes.push({
         id: actionId,
         type: 'default',
         position: { x: startX + index * actionSpacing, y: currentY },
-        data: { 
+        data: {
           label: action.task.slice(0, 40),
           description: `Owner: ${action.owner}${action.deadline ? ' | Due: ' + action.deadline : ''}`,
           priority: action.priority
@@ -221,7 +221,7 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
           fontSize: '12px',
         },
       });
-      
+
       edges.push({
         id: `e-action-${index}`,
         source: actionStartId,
@@ -232,11 +232,11 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
         label: action.priority,
       });
     });
-    
+
     currentY += 120;
   }
-  
-  // 6. 时间线
+
+  // 6. Timeline
   const phases = summary.timeline || [];
   if (phases.length > 0) {
     const timelineId = `node-${nodeId}`;
@@ -275,18 +275,18 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
     currentY += 100;
     nodeId++;
     
-    // 阶段节点 - 水平排列
+    // Phase nodes - horizontal layout
     const phaseSpacing = 180;
     const startX = 400 - ((phases.length - 1) * phaseSpacing) / 2;
-    
+
     phases.forEach((phase, index) => {
       const phaseId = `phase-${index}`;
-      
+
       nodes.push({
         id: phaseId,
         type: 'default',
         position: { x: startX + index * phaseSpacing, y: currentY },
-        data: { 
+        data: {
           label: phase.name,
           description: `${phase.duration} | ${phase.owner}`
         },
@@ -305,7 +305,7 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
           fontWeight: 'bold',
         },
       });
-      
+
       edges.push({
         id: `e-phase-${index}`,
         source: timelineId,
@@ -314,7 +314,7 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
         markerEnd: { type: MarkerType.ArrowClosed },
         style: { stroke: '#6b7280', strokeWidth: 2 },
       });
-      
+
       if (index > 0) {
         edges.push({
           id: `e-phase-conn-${index}`,
@@ -326,11 +326,11 @@ function parseFlowchart(summary: MeetingSummary): { nodes: Node<FlowNodeData>[];
         });
       }
     });
-    
+
     currentY += 120;
   }
-  
-  // 7. 结束节点
+
+  // 7. End node
   nodes.push({
     id: 'end',
     type: 'output',
@@ -408,7 +408,7 @@ export function FlowchartStyle({ summary }: FlowchartStyleProps) {
         />
       </ReactFlow>
       
-      {/* 图例 */}
+      {/* Legend */}
       <div className="absolute bottom-4 right-4 bg-white p-4 rounded-xl border border-gray-200 shadow-lg">
         <h4 className="text-sm font-bold text-gray-700 mb-3">Flowchart Legend</h4>
         <div className="space-y-2 text-xs">
