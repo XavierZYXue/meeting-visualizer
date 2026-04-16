@@ -1,5 +1,6 @@
 import { Mic, MicOff, RotateCcw, AlertCircle } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useState, useEffect, useRef } from 'react';
 
 interface RecordingPanelProps {
   onTranscriptChange: (transcript: string) => void;
@@ -17,17 +18,50 @@ export function RecordingPanel({ onTranscriptChange }: RecordingPanelProps) {
     isSupported
   } = useSpeechRecognition();
 
+  // Local state for editable transcript
+  const [editableText, setEditableText] = useState('');
+  const lastTranscriptRef = useRef('');
+
+  // Update editable text when speech recognition provides new transcript
+  useEffect(() => {
+    const currentTranscript = transcript + interimTranscript;
+    
+    // Only update if speech recognition has new content
+    if (currentTranscript !== lastTranscriptRef.current) {
+      // If we have new speech content, append it to existing text
+      if (transcript && transcript !== lastTranscriptRef.current.replace(interimTranscript, '')) {
+        const newSpeechOnly = transcript.replace(lastTranscriptRef.current.replace(interimTranscript, ''), '');
+        setEditableText(prev => {
+          const updated = prev + newSpeechOnly;
+          onTranscriptChange(updated);
+          return updated;
+        });
+      } else if (currentTranscript && !editableText) {
+        // Initial population
+        setEditableText(currentTranscript);
+        onTranscriptChange(currentTranscript);
+      }
+      lastTranscriptRef.current = currentTranscript;
+    }
+  }, [transcript, interimTranscript]);
+
+  // Handle manual text editing
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setEditableText(newText);
+    onTranscriptChange(newText);
+    
+    // Update ref to prevent speech from overriding manual edits
+    lastTranscriptRef.current = transcript + interimTranscript;
+  };
+
   // Update parent component with transcript
   const handleReset = () => {
     resetTranscript();
+    setEditableText('');
+    lastTranscriptRef.current = '';
     onTranscriptChange('');
   };
-
-  // Send transcript to parent whenever it changes
-  const displayText = transcript + interimTranscript;
-  if (transcript || interimTranscript) {
-    onTranscriptChange(displayText);
-  }
 
   if (!isSupported) {
     return (
@@ -125,7 +159,7 @@ export function RecordingPanel({ onTranscriptChange }: RecordingPanelProps) {
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
             Live Transcript
           </h3>
-          {transcript && (
+          {editableText && (
             <button
               onClick={handleReset}
               className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-500 transition-colors"
@@ -138,22 +172,22 @@ export function RecordingPanel({ onTranscriptChange }: RecordingPanelProps) {
         
         <div className="relative">
           <textarea
-            value={displayText}
-            onChange={(e) => onTranscriptChange(e.target.value)}
-            placeholder="Your meeting transcript will appear here..."
+            value={editableText}
+            onChange={handleTextChange}
+            placeholder="Your meeting transcript will appear here... You can also type or edit the text directly."
             className="w-full h-40 p-4 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-gray-700 leading-relaxed"
           />
-          {interimTranscript && (
-            <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
-              <span className="text-gray-400 italic">{interimTranscript}</span>
+          {isListening && interimTranscript && (
+            <div className="absolute bottom-4 left-4 right-4 pointer-events-none bg-gray-50/80 rounded px-2">
+              <span className="text-indigo-500 italic">Listening: {interimTranscript}</span>
             </div>
           )}
         </div>
         
         {/* Character Count */}
         <div className="flex justify-end mt-2">
-          <span className={`text-xs ${displayText.length > 100 ? 'text-gray-600' : 'text-gray-400'}`}>
-            {displayText.length} characters
+          <span className={`text-xs ${editableText.length > 100 ? 'text-gray-600' : 'text-gray-400'}`}>
+            {editableText.length} characters
           </span>
         </div>
       </div>
