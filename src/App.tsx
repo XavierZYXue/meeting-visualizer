@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Sparkles, Settings, X, Wand2 } from 'lucide-react';
 import { RecordingPanel } from './components/RecordingPanel';
 import { VisualSummary } from './components/VisualSummary';
-import { StyleSelector } from './components/StyleSelector';
 import { generateMeetingSummary } from './services/openai';
 import { getApiKey, setApiKey } from './services/openai';
 import type { MeetingSummary, VisualStyle } from './types';
@@ -129,8 +128,7 @@ function App() {
           <div className="space-y-6">
             {summary ? (
               <>
-                <StyleSelector currentStyle={style} onStyleChange={setStyle} />
-                <VisualSummary summary={summary} style={style} />
+                <VisualSummary summary={summary} style={style} onStyleChange={setStyle} />
                 <div className="flex justify-center gap-4">
                   <button
                     onClick={handleClear}

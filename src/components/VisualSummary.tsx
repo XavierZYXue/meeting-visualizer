@@ -1,4 +1,4 @@
-import { Download, Image as ImageIcon, FileJson, Copy, Check } from 'lucide-react';
+import { Download, Image as ImageIcon, FileJson, Copy, Check, Box, GitBranch, Network, Timer, Palette, Pencil, Layers } from 'lucide-react';
 import { useState, useRef } from 'react';
 import type { MeetingSummary, VisualStyle } from '../types';
 import { ModernStyle } from './visualStyles/ModernStyle';
@@ -10,12 +10,23 @@ import { TimelineFlowStyle } from './visualStyles/TimelineFlowStyle';
 import { ArchitectureStyle } from './visualStyles/ArchitectureStyle';
 import { exportToImage, copyToClipboard, downloadJSON } from '../utils/exportImage';
 
+const styleOptions: { id: VisualStyle; name: string; icon: React.ReactNode }[] = [
+  { id: 'architecture', name: 'Architecture', icon: <Box className="w-5 h-5" /> },
+  { id: 'flowchart', name: 'Flowchart', icon: <GitBranch className="w-5 h-5" /> },
+  { id: 'mindmap', name: 'Mind Map', icon: <Network className="w-5 h-5" /> },
+  { id: 'timeline', name: 'Timeline', icon: <Timer className="w-5 h-5" /> },
+  { id: 'modern', name: 'Modern Cards', icon: <Palette className="w-5 h-5" /> },
+  { id: 'handdrawn', name: 'Hand Drawn', icon: <Pencil className="w-5 h-5" /> },
+  { id: 'minimal', name: 'Minimal', icon: <Layers className="w-5 h-5" /> },
+];
+
 interface VisualSummaryProps {
   summary: MeetingSummary;
   style: VisualStyle;
+  onStyleChange?: (style: VisualStyle) => void;
 }
 
-export function VisualSummary({ summary, style }: VisualSummaryProps) {
+export function VisualSummary({ summary, style, onStyleChange }: VisualSummaryProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -71,12 +82,36 @@ export function VisualSummary({ summary, style }: VisualSummaryProps) {
     <div className="space-y-4">
       {/* Export Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="flex items-center gap-3">
-          <ImageIcon className="w-5 h-5 text-gray-400" />
-          <span className="text-sm text-gray-600">
-            Visual Summary
-          </span>
+        {/* Left: Title and Style Selector */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ImageIcon className="w-5 h-5 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">Visual Summary</span>
+          </div>
+          {/* Style Selector - Icon Buttons */}
+          {onStyleChange && (
+            <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
+              {styleOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => onStyleChange(option.id)}
+                  title={option.name}
+                  className={`
+                    flex items-center justify-center p-2 rounded-md transition-all
+                    ${style === option.id
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                    }
+                  `}
+                >
+                  {option.icon}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Right: Export Buttons */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
