@@ -33,8 +33,18 @@ function App() {
     }
 
     setIsGenerating(true);
+    const startTime = Date.now();
+    
     try {
       const result = await generateMeetingSummary(transcript);
+      
+      // Ensure minimum 3 second animation duration
+      const elapsedTime = Date.now() - startTime;
+      const minDuration = 3000; // 3 seconds
+      if (elapsedTime < minDuration) {
+        await new Promise(resolve => setTimeout(resolve, minDuration - elapsedTime));
+      }
+      
       setSummary(result);
     } catch (error) {
       console.error('Failed to generate summary:', error);
@@ -91,25 +101,58 @@ function App() {
             <RecordingPanel onTranscriptChange={handleTranscriptChange} />
             
             {/* Generate Button */}
-            {transcript.length > 50 && !summary && (
-              <div className="flex justify-center">
-                <button
-                  onClick={handleGenerateSummary}
-                  disabled={isGenerating}
-                  className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Generating Summary...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-5 h-5" />
-                      Generate Visual Summary
-                    </>
-                  )}
-                </button>
+            {transcript.length > 50 && (
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Red pulsing dot */}
+                  <div style={{ position: 'relative', width: '20px', height: '20px' }}>
+                    <span style={{ 
+                      position: 'relative', 
+                      display: 'inline-flex', 
+                      width: '20px', 
+                      height: '20px', 
+                      borderRadius: '50%', 
+                      backgroundColor: '#dc2626', 
+                      border: '2px solid white'
+                    }}>
+                      {isGenerating && (
+                        <span style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          borderRadius: '50%',
+                          backgroundColor: '#ef4444',
+                          opacity: 0.75,
+                          animation: 'generating-pulse 1s cubic-bezier(0, 0, 0.2, 1) infinite'
+                        }}></span>
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleGenerateSummary}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Generating Summary...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-5 h-5" />
+                        {summary ? 'Regenerate Visual Summary' : 'Generate Visual Summary'}
+                      </>
+                    )}
+                  </button>
+                </div>
+                {summary && (
+                  <p className="text-xs text-gray-500">
+                    Click to regenerate based on your current transcript
+                  </p>
+                )}
               </div>
             )}
 
@@ -125,7 +168,8 @@ function App() {
           </div>
 
           {/* Right Column - Visual Output */}
-          <div className="space-y-6">
+          <div className="space-y-6 relative">
+            
             {summary ? (
               <>
                 <VisualSummary summary={summary} style={style} onStyleChange={setStyle} />

@@ -61,6 +61,9 @@ export async function generateMeetingSummary(transcript: string): Promise<Meetin
       parsed.visualData = generateVisualData(parsed);
     }
     
+    // Keep original transcript for architecture parsing
+    parsed.transcript = transcript;
+    
     return parsed as MeetingSummary;
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
@@ -156,6 +159,9 @@ export async function generateMeetingSummaryWithClaude(transcript: string, claud
     if (!parsed.visualData) {
       parsed.visualData = generateVisualData(parsed);
     }
+    
+    // Keep original transcript for architecture parsing
+    parsed.transcript = transcript;
     
     return parsed as MeetingSummary;
   } catch (error) {

@@ -5,6 +5,7 @@ export interface MeetingSummary {
   actionItems: ActionItem[];
   timeline?: TimelinePhase[];
   visualData: VisualCard[];
+  transcript?: string; // Original transcript for architecture parsing
 }
 
 export interface ActionItem {

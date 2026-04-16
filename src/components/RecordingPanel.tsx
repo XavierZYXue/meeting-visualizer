@@ -20,46 +20,39 @@ export function RecordingPanel({ onTranscriptChange }: RecordingPanelProps) {
 
   // Local state for editable transcript
   const [editableText, setEditableText] = useState('');
-  const lastTranscriptRef = useRef('');
+  const lastFinalTranscriptRef = useRef('');
 
   // Update editable text when speech recognition provides new transcript
   useEffect(() => {
-    const currentTranscript = transcript + interimTranscript;
-    
-    // Only update if speech recognition has new content
-    if (currentTranscript !== lastTranscriptRef.current) {
-      // If we have new speech content, append it to existing text
-      if (transcript && transcript !== lastTranscriptRef.current.replace(interimTranscript, '')) {
-        const newSpeechOnly = transcript.replace(lastTranscriptRef.current.replace(interimTranscript, ''), '');
+    // Only process when we have new final transcript content
+    if (transcript && transcript !== lastFinalTranscriptRef.current) {
+      // Calculate only the new final text added
+      const newFinalText = transcript.slice(lastFinalTranscriptRef.current.length);
+      
+      if (newFinalText) {
         setEditableText(prev => {
-          const updated = prev + newSpeechOnly;
+          const updated = prev + newFinalText;
           onTranscriptChange(updated);
           return updated;
         });
-      } else if (currentTranscript && !editableText) {
-        // Initial population
-        setEditableText(currentTranscript);
-        onTranscriptChange(currentTranscript);
       }
-      lastTranscriptRef.current = currentTranscript;
+      
+      lastFinalTranscriptRef.current = transcript;
     }
-  }, [transcript, interimTranscript]);
+  }, [transcript]);
 
   // Handle manual text editing
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setEditableText(newText);
     onTranscriptChange(newText);
-    
-    // Update ref to prevent speech from overriding manual edits
-    lastTranscriptRef.current = transcript + interimTranscript;
   };
 
   // Update parent component with transcript
   const handleReset = () => {
     resetTranscript();
     setEditableText('');
-    lastTranscriptRef.current = '';
+    lastFinalTranscriptRef.current = '';
     onTranscriptChange('');
   };
 

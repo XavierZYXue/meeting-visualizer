@@ -130,3 +130,11 @@ body {
   border-radius: 2px 255px 3px 25px / 255px 5px 225px 5px;
   box-shadow: 2px 3px 0 rgba(0,0,0,0.1);
 }
+
+/* Generating red dot pulse animation */
+@keyframes generating-pulse {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}

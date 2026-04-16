@@ -180,6 +180,7 @@ export function simulateAISummary(transcript: string): MeetingSummary {
         icon: '📅',
         accent: '#f59e0b'
       }
-    ]
+    ],
+    transcript // Keep original transcript for architecture parsing
   };
 }
